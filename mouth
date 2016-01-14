@@ -5,6 +5,9 @@
 #include <vector>
 #include <unistd.h>
 #include <cstdlib>
+#include "ros/ros.h"
+#include "std_msgs/String.h"
+#include <sstream>
 
 using namespace std;
 
@@ -41,6 +44,7 @@ struct Event
     int timeH;
     int timeM;
     int timeS;
+    int location;
 };
 
 /**************************************************************************/
@@ -151,9 +155,9 @@ int dayNumber(int m, int d, int y)
 /* The main algorithm for the calendar program                            */
 /**************************************************************************/
 
-int main ()
+int main (int argc, char **argv)
 {
-    cout << "Welcome to the Turtlebot Trille's user interface." << endl;
+    cout << "Welcome to the Turtlebot T.R.I.L.L.E.R's user interface." << endl;
     cout << "What would you like to do?" << endl;
     cout << "\n1: Make a new appointment." << endl;
     cout << "2: Check appointments." << endl;
@@ -164,14 +168,25 @@ int main ()
 
     vector<Event>listOfEvents;
     Event p;
+	
+	ros::init(argc, argv, "mouth");
 
-    while (true)
+	ros::NodeHandle n;
+
+	ros::Publisher location1_pub = n.advertise<std_msgs::String>("location1", 1000);
+	ros::Publisher location2_pub = n.advertise<std_msgs::String>("location2", 1000);
+
+	ros::Rate loop_rate(10);
+
+	int count = 0;
+
+    while (true && ros::ok())
     {
 	
-        if (userInputTwo == 1)
+        if (userInputTwo == 1 && ros::ok())
         {
             system("clear");
-            cout << "Welcome to the Turtlebot Trille's user interface." << endl;
+            cout << "Welcome to the Turtlebot T.R.I.L.L.E.R's user interface." << endl;
             cout << "What would you like to do?" << endl;
             cout << "\n1: Make a new appointment." << endl;
             cout << "2: Check appointments." << endl;
@@ -206,6 +221,9 @@ int main ()
             cin >> p.timeM;
             cin >> p.timeS;
 
+	    cout << "\nEnter the location (1 or 2): ";
+	    cin >> p.location;
+
             listOfEvents.push_back(p);
 
             cout << listOfEvents.size() << endl;
@@ -222,9 +240,10 @@ int main ()
 
             for (int n=0; n < listOfEvents.size(); n++)
             {
-                cout << "Date: " << listOfEvents[n].date2 << "-" << listOfEvents[n].date1 << "-" << listOfEvents[n].date3 << endl;
-                cout << "Time: " << listOfEvents[n].timeH << ":" << listOfEvents[n].timeM << ":" << listOfEvents[n].timeS << endl;
-                cout << listOfEvents[n].dateNotice << endl;
+                cout << "Date: " << listOfEvents[n].date2 << "-" << listOfEvents[n].date1 << "-" << lis-tOfEvents[n].date3 << endl;
+                cout << "Time: " << listOfEvents[n].timeH << ":" << listOfEvents[n].timeM << ":" << lis-tOfEvents[n].timeS << endl;
+		cout << "At location: " << listOfEvents[n].location << endl;                
+		cout << listOfEvents[n].dateNotice << endl;
                 cout << "Ref nr: " << n << "\n" << endl;
             }
 	    
@@ -276,9 +295,10 @@ int main ()
             cout << "Ref nr: ";
             cin >> RefNr;
 
-            cout << "\nDate: " << listOfEvents[RefNr].date2 << "-" << listOfEvents[RefNr].date1 << "-" << listOfEvents[RefNr].date3 << endl;
-            cout << "Time: " << listOfEvents[RefNr].timeH << ":" << listOfEvents[RefNr].timeM << ":" << listOfEvents[RefNr].timeS << endl;
-            cout << listOfEvents[RefNr].dateNotice << endl;
+            cout << "\nDate: " << listOfEvents[RefNr].date2 << "-" << listOfEvents[RefNr].date1 << "-" << lis-tOfEvents[RefNr].date3 << endl;
+            cout << "Time: " << listOfEvents[RefNr].timeH << ":" << listOfEvents[RefNr].timeM << ":" << lis-tOfEvents[RefNr].timeS << endl;
+            cout << "Location: " << listOfEvents[RefNr].location << endl;
+	    cout << listOfEvents[RefNr].dateNotice << endl;
 
             cin.ignore().get();
             system("clear");
@@ -301,6 +321,9 @@ int main ()
             cin >> listOfEvents[RefNr].timeM;
             cin >> listOfEvents[RefNr].timeS;
 
+	    cout << "\nEnter new location: ";
+	    cin >> listOfEvents[RefNr].location;
+
             cin.ignore().get();
             userInputTwo = 1;
         }
@@ -308,7 +331,7 @@ int main ()
         else if (userInput == 5)
         {
 
-	while(true)
+	while(true && ros::ok())
         {
 		sleep(1);		
 		checkYear();
@@ -322,22 +345,52 @@ int main ()
                 for (int n = 0; n < listOfEvents.size();)
                 {
 
-			if (listOfEvents[n].date3 == checkYear() && listOfEvents[n].date1 == checkMonth() &&
+			if (listOfEvents[n].date3 == checkYear() && lis-tOfEvents[n].date1 == checkMonth() &&
                         listOfEvents[n].date2 == checkDay() && checkHours() == listOfEvents[n].timeH &&
                         listOfEvents[n].timeM == checkMin() && listOfEvents[n].timeS == checkSeconds())
                     	{
                         	system("clear");
-
-				int counter = 0;
 				
-				cout << listOfEvents[n].dateNotice << endl;
-				
-				while(counter < 5)
+				if (listOfEvents[n].location == 1)
 				{
-					sleep(1);
-                        			
-					counter++;
+					std_msgs::String msg;
+
+					std::stringstream ss;
+					ss << listOfEvents[n].location;
+					msg.data = ss.str();
+
+					ROS_INFO("%s", msg.data.c_str());
+
+					location1_pub.publish(msg);
+
+					ros::spinOnce();
+
+					loop_rate.sleep();
+
+					++count;
 				}
+
+				else if (listOfEvents[n].location == 2)
+				{
+					std_msgs::String msg;
+
+					std::stringstream ss;
+					ss << listOfEvents[n].location;
+					msg.data = ss.str();
+
+					ROS_INFO("%s", msg.data.c_str());
+
+					location2_pub.publish(msg);
+
+					ros::spinOnce();
+
+					loop_rate.sleep();
+
+					++count;
+				}
+				
+				//cout << listOfEvents[n].dateNotice << endl;
+				
 				listOfEvents.erase(listOfEvents.begin() + n);
 
                         }
@@ -518,5 +571,3 @@ void skipToDay (int d)
 {
     return skip(3*d);
 }
-
-
